@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel de Vendas — Mercado Livre + Shopee</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#122029; --ink-soft:#46586a; --line:#dde4ea; --page:#eceff3;
+    --surface:#ffffff; --ml:#f4b400; --ml-deep:#c98a00; --shp:#ee4d2d;
+    --teal:#0f766e; --teal-soft:#e2f1ef; --shadow:0 1px 2px rgba(18,32,41,.06),0 8px 24px rgba(18,32,41,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--page);color:var(--ink);
+    -webkit-font-smoothing:antialiased;line-height:1.45}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 64px}
+  .num{font-family:'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums}
+  header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px}
+  .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  h1{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.05;margin-top:4px}
+  .period{font-size:13px;color:var(--ink-soft)}
+  .period b{color:var(--ink);font-weight:600}
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .kpi .lab{font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  .kpi .val{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:700;letter-spacing:-.01em;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .sub{font-size:12px;color:var(--ink-soft);margin-top:2px}
+  .kpi.ac{border-top:3px solid var(--teal)}
+  /* Filters */
+  .filters{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;
+    box-shadow:var(--shadow);margin-bottom:22px;display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end}
+  .fg{display:flex;flex-direction:column;gap:6px;min-width:150px;flex:1 1 150px}
+  .fg label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-soft);font-weight:600}
+  select{font-family:inherit;font-size:14px;color:var(--ink);background:#fbfcfd;border:1px solid var(--line);
+    border-radius:9px;padding:9px 11px;appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2346586a' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center}
+  select:focus{outline:2px solid var(--teal);outline-offset:1px;border-color:var(--teal)}
+  .reset{font-family:inherit;font-size:13px;font-weight:600;color:var(--teal);background:var(--teal-soft);
+    border:1px solid #cfe6e2;border-radius:9px;padding:9px 14px;cursor:pointer;white-space:nowrap}
+  .reset:hover{background:#d3ebe7}
+  /* Month chips */
+  .months{display:flex;gap:7px;flex-wrap:wrap;align-items:center}
+  .chip{font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;border:1px solid var(--line);
+    background:#fbfcfd;color:var(--ink-soft);border-radius:999px;padding:7px 13px;cursor:pointer;transition:.12s}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  /* Charts */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 8px;box-shadow:var(--shadow)}
+  .card h2{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:600;letter-spacing:-.01em}
+  .card .ch-sub{font-size:12px;color:var(--ink-soft);margin:2px 0 14px}
+  .canvas-box{position:relative;height:300px}
+  .seg{display:inline-flex;background:#eef1f4;border-radius:9px;padding:3px;gap:2px;margin-bottom:4px}
+  .seg button{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink-soft);background:transparent;
+    border:none;border-radius:7px;padding:6px 11px;cursor:pointer}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .seg-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+  /* Table */
+  .tablecard{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+  .tablecard .head{padding:18px 18px 0}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13.5px}
+  th,td{text-align:right;padding:11px 18px;border-top:1px solid var(--line)}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-soft);font-weight:600;border-top:none}
+  tbody tr:hover{background:#f7f9fb}
+  td.num{font-family:'Space Grotesk',sans-serif;font-variant-numeric:tabular-nums}
+  .bar-mini{height:6px;border-radius:3px;background:var(--teal);display:inline-block;vertical-align:middle;margin-left:8px}
+  .rank{color:var(--ink-soft);font-family:'Space Grotesk',sans-serif;width:22px;display:inline-block}
+  .foot{font-size:11.5px;color:var(--ink-soft);margin-top:18px;text-align:center}
+  @media(max-width:880px){.kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">Vendas consolidadas</div>
+      <h1>Mercado Livre + Shopee</h1>
+    </div>
+    <div class="period">Período: <b>jan</b> a <b>jun 2026</b> &middot; Contas: Ricapet &amp; Thapets</div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="filters">
+    <div class="fg"><label>Plataforma</label><select id="fPlat"></select></div>
+    <div class="fg"><label>Conta</label><select id="fConta"></select></div>
+    <div class="fg" style="flex:2 1 220px"><label>Produto</label><select id="fProd"></select></div>
+    <div class="fg" style="flex:2 1 240px">
+      <label>Meses</label>
+      <div class="months" id="fMonths"></div>
+    </div>
+    <button class="reset" id="reset">Limpar filtros</button>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="seg-row">
+        <div><h2>Faturamento mensal</h2><div class="ch-sub">Total (BRL) por mês</div></div>
+        <div class="seg" id="segBrl">
+          <button data-b="plataforma" class="on">Plataforma</button>
+          <button data-b="conta">Conta</button>
+          <button data-b="produto">Top produtos</button>
+        </div>
+      </div>
+      <div class="canvas-box"><canvas id="chBrl"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="seg-row">
+        <div><h2>Unidades mensais</h2><div class="ch-sub">Total de unidades por mês</div></div>
+        <div class="seg" id="segUn">
+          <button data-b="plataforma" class="on">Plataforma</button>
+          <button data-b="conta">Conta</button>
+          <button data-b="produto">Top produtos</button>
+        </div>
+      </div>
+      <div class="canvas-box"><canvas id="chUn"></canvas></div>
+    </div>
+  </div>
+
+  <div class="tablecard">
+    <div class="head"><h2 style="font-family:'Space Grotesk';font-size:16px;font-weight:600">Ranking de produtos</h2>
+    <div class="ch-sub" style="font-size:12px;color:var(--ink-soft);margin-top:2px">Ordenado por faturamento, respeitando os filtros</div></div>
+    <table><thead><tr><th>Produto</th><th>Faturamento (BRL)</th><th>Unidades</th><th>Receita/un.</th><th>% do total</th></tr></thead>
+    <tbody id="tbody"></tbody></table>
+  </div>
+
+  <div class="foot">Fonte: bases "Base Final" de Mercado Livre e Shopee, unificadas. Total geral do período: R$ <span id="ftBRL"></span> &middot; <span id="ftUN"></span> unidades.</div>
+</div>
+
+<script>
+const DATA_FIXO = {"recs": [{"p": "Shopee", "c": "Ricapet", "pr": "Alimentador Automático", "m": "2026-01", "brl": 621.04, "un": 14}, {"p": "Shopee", "c": "Ricapet", "pr": "Alimentador Automático", "m": "2026-03", "brl": 10010.25, "un": 228}, {"p": "Shopee", "c": "Ricapet", "pr": "Alimentador Automático", "m": "2026-04", "brl": 9689.69, "un": 220}, {"p": "Shopee", "c": "Ricapet", "pr": "Alimentador Automático", "m": "2026-05", "brl": 6770.58, "un": 160}, {"p": "Shopee", "c": "Ricapet", "pr": "Alimentador Automático", "m": "2026-06", "brl": 1878.13, "un": 43}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo", "m": "2026-01", "brl": 32015.74, "un": 1183}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo", "m": "2026-02", "brl": 27989.79, "un": 1130}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo", "m": "2026-03", "brl": 27938.14, "un": 1025}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo", "m": "2026-04", "brl": 37510.35, "un": 1491}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo", "m": "2026-05", "brl": 35062.46, "un": 1329}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo", "m": "2026-06", "brl": 23994.7, "un": 923}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo Gato", "m": "2026-01", "brl": 2150.12, "un": 172}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo Gato", "m": "2026-02", "brl": 3464.93, "un": 277}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo Gato", "m": "2026-03", "brl": 4637.43, "un": 355}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo Gato", "m": "2026-04", "brl": 3532.25, "un": 279}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo Gato", "m": "2026-05", "brl": 3638.05, "un": 288}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Adesivo Gato", "m": "2026-06", "brl": 2107.24, "un": 159}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Cara De Gato", "m": "2026-01", "brl": 55.52, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Cara De Gato", "m": "2026-02", "brl": 155.59, "un": 5}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Cara De Gato", "m": "2026-03", "brl": 75.07, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Cara De Gato", "m": "2026-05", "brl": 71.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Cara De Gato", "m": "2026-06", "brl": 99.97, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Braço", "m": "2026-01", "brl": 1288.71, "un": 14}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Braço", "m": "2026-02", "brl": 548.44, "un": 5}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Braço", "m": "2026-03", "brl": 392.75, "un": 6}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Braço", "m": "2026-04", "brl": 737.53, "un": 9}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Braço", "m": "2026-05", "brl": 621.36, "un": 7}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Braço", "m": "2026-06", "brl": 625.33, "un": 5}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Madeira", "m": "2026-01", "brl": 10505.82, "un": 232}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Madeira", "m": "2026-02", "brl": 10037.97, "un": 241}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Madeira", "m": "2026-03", "brl": 13609.89, "un": 309}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Madeira", "m": "2026-04", "brl": 12767.14, "un": 287}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Madeira", "m": "2026-05", "brl": 12145.15, "un": 296}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador De Madeira", "m": "2026-06", "brl": 9082.71, "un": 209}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Parede", "m": "2026-01", "brl": 6915.38, "un": 311}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Parede", "m": "2026-02", "brl": 7011.87, "un": 345}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Parede", "m": "2026-03", "brl": 10807.68, "un": 517}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Parede", "m": "2026-04", "brl": 7253.67, "un": 330}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Parede", "m": "2026-05", "brl": 4558.43, "un": 225}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Parede", "m": "2026-06", "brl": 2779.32, "un": 136}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Rampa", "m": "2026-01", "brl": 11598.67, "un": 525}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Rampa", "m": "2026-02", "brl": 10515.78, "un": 511}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Rampa", "m": "2026-03", "brl": 8305.02, "un": 398}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Rampa", "m": "2026-04", "brl": 5066.84, "un": 234}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Rampa", "m": "2026-05", "brl": 5740.49, "un": 268}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Rampa", "m": "2026-06", "brl": 7387.82, "un": 354}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Túnel", "m": "2026-01", "brl": 2357.81, "un": 50}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Túnel", "m": "2026-02", "brl": 578.46, "un": 11}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Túnel", "m": "2026-03", "brl": 756.05, "un": 15}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Túnel", "m": "2026-04", "brl": 2367.5, "un": 53}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Túnel", "m": "2026-05", "brl": 1455.68, "un": 32}, {"p": "Shopee", "c": "Ricapet", "pr": "Arranhador Túnel", "m": "2026-06", "brl": 824.61, "un": 19}, {"p": "Shopee", "c": "Ricapet", "pr": "Banheiro Inteligente", "m": "2026-04", "brl": 1693.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Brinquedo Interativo", "m": "2026-02", "brl": 44.55, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Brinquedo Interativo", "m": "2026-03", "brl": 16.79, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Brinquedo Interativo", "m": "2026-04", "brl": 27.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Brinquedo Interativo", "m": "2026-05", "brl": 55.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Brinquedo Interativo", "m": "2026-06", "brl": 159.9, "un": 5}, {"p": "Shopee", "c": "Ricapet", "pr": "Cama Suspensa", "m": "2026-01", "brl": 281.81, "un": 6}, {"p": "Shopee", "c": "Ricapet", "pr": "Cama Suspensa", "m": "2026-02", "brl": 71.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Cama Suspensa", "m": "2026-03", "brl": 206.15, "un": 4}, {"p": "Shopee", "c": "Ricapet", "pr": "Cama Suspensa", "m": "2026-04", "brl": 79.83, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Cama Suspensa", "m": "2026-06", "brl": 111.97, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Caminha 02", "m": "2026-01", "brl": 324.4, "un": 9}, {"p": "Shopee", "c": "Ricapet", "pr": "Caminha 02", "m": "2026-02", "brl": 108.27, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Caminha 02", "m": "2026-03", "brl": 143.96, "un": 4}, {"p": "Shopee", "c": "Ricapet", "pr": "Caminha 02", "m": "2026-05", "brl": 219.95, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Caminha 02", "m": "2026-06", "brl": 143.96, "un": 4}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 03", "m": "2026-01", "brl": 44.36, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 03", "m": "2026-02", "brl": 87.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 03", "m": "2026-03", "brl": 131.97, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 03", "m": "2026-04", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 03", "m": "2026-05", "brl": 43.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 03", "m": "2026-06", "brl": 79.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 04", "m": "2026-03", "brl": 201.03, "un": 9}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 04", "m": "2026-04", "brl": 1150.56, "un": 66}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 04", "m": "2026-05", "brl": 504.56, "un": 25}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 04", "m": "2026-06", "brl": 272.55, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 05", "m": "2026-01", "brl": 108.87, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 05", "m": "2026-02", "brl": 179.95, "un": 5}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 05", "m": "2026-03", "brl": 455.88, "un": 12}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 05", "m": "2026-04", "brl": 131.97, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 05", "m": "2026-05", "brl": 175.96, "un": 4}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 05", "m": "2026-06", "brl": 107.97, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 06", "m": "2026-04", "brl": 58.39, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 07", "m": "2026-01", "brl": 12773.1, "un": 247}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 07", "m": "2026-02", "brl": 9658.7, "un": 199}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 07", "m": "2026-03", "brl": 8392.77, "un": 163}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 07", "m": "2026-04", "brl": 5791.57, "un": 111}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 07", "m": "2026-05", "brl": 8712.85, "un": 177}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 07", "m": "2026-06", "brl": 9190.78, "un": 194}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 10", "m": "2026-01", "brl": 200.76, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 10", "m": "2026-02", "brl": 300.75, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 10", "m": "2026-04", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 12", "m": "2026-01", "brl": 127.39, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 12", "m": "2026-02", "brl": 183.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 12", "m": "2026-03", "brl": 166.38, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 12", "m": "2026-05", "brl": 158.89, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 14", "m": "2026-03", "brl": 75.54, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 14", "m": "2026-04", "brl": 223.96, "un": 5}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 14", "m": "2026-05", "brl": 223.96, "un": 4}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 14", "m": "2026-06", "brl": 447.92, "un": 6}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha 15", "m": "2026-01", "brl": 143.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha Toca", "m": "2026-01", "brl": 153.18, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha Toca", "m": "2026-02", "brl": 151.98, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha Toca", "m": "2026-03", "brl": 153.18, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Casinha Toca", "m": "2026-04", "brl": 69.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Comedouro Inteligente", "m": "2026-05", "brl": 824.97, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Degrau", "m": "2026-01", "brl": 86.77, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Degrau", "m": "2026-04", "brl": 78.89, "un": 4}, {"p": "Shopee", "c": "Ricapet", "pr": "Degrau", "m": "2026-05", "brl": 51.99, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Pato Interativo", "m": "2026-04", "brl": 35.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Pato Interativo", "m": "2026-05", "brl": 35.92, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Pega Areia", "m": "2026-01", "brl": 4182.74, "un": 163}, {"p": "Shopee", "c": "Ricapet", "pr": "Pega Areia", "m": "2026-02", "brl": 4240.73, "un": 170}, {"p": "Shopee", "c": "Ricapet", "pr": "Pega Areia", "m": "2026-03", "brl": 4785.06, "un": 338}, {"p": "Shopee", "c": "Ricapet", "pr": "Pega Areia", "m": "2026-04", "brl": 3188.96, "un": 130}, {"p": "Shopee", "c": "Ricapet", "pr": "Pega Areia", "m": "2026-05", "brl": 2745.6, "un": 114}, {"p": "Shopee", "c": "Ricapet", "pr": "Pega Areia", "m": "2026-06", "brl": 1904.66, "un": 77}, {"p": "Shopee", "c": "Ricapet", "pr": "Playground 03", "m": "2026-06", "brl": 231.9, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Poste Arranhador", "m": "2026-01", "brl": 31.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Poste Arranhador", "m": "2026-03", "brl": 62.55, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Poste Arranhador", "m": "2026-05", "brl": 47.97, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Poste Arranhador", "m": "2026-06", "brl": 15.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Presilhas Aspirais", "m": "2026-01", "brl": 164.32, "un": 168}, {"p": "Shopee", "c": "Ricapet", "pr": "Presilhas Aspirais", "m": "2026-02", "brl": 82.23, "un": 16}, {"p": "Shopee", "c": "Ricapet", "pr": "Presilhas Aspirais", "m": "2026-03", "brl": 31.98, "un": 32}, {"p": "Shopee", "c": "Ricapet", "pr": "Presilhas Aspirais", "m": "2026-04", "brl": 163.92, "un": 176}, {"p": "Shopee", "c": "Ricapet", "pr": "Presilhas Aspirais", "m": "2026-05", "brl": 215.85, "un": 226}, {"p": "Shopee", "c": "Ricapet", "pr": "Presilhas Aspirais", "m": "2026-06", "brl": 279.78, "un": 302}, {"p": "Shopee", "c": "Ricapet", "pr": "Rampa 6Mm", "m": "2026-03", "brl": 55.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Rampa 6Mm", "m": "2026-05", "brl": 55.99, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Sanitario E Pega Areia", "m": "2026-01", "brl": 940.74, "un": 6}, {"p": "Shopee", "c": "Ricapet", "pr": "Sanitario E Pega Areia", "m": "2026-02", "brl": 1018.14, "un": 6}, {"p": "Shopee", "c": "Ricapet", "pr": "Sanitario E Pega Areia", "m": "2026-03", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Ricapet", "pr": "Sanitario E Pega Areia", "m": "2026-04", "brl": 163.19, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Sanitario E Pega Areia", "m": "2026-05", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Ricapet", "pr": "Sanitário", "m": "2026-01", "brl": 517.77, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Comedouro", "m": "2026-01", "brl": 52.33, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Comedouro", "m": "2026-02", "brl": 32.96, "un": 1}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Comedouro", "m": "2026-03", "brl": 22.38, "un": 2}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Comedouro", "m": "2026-04", "brl": 111.91, "un": 8}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Comedouro", "m": "2026-05", "brl": 33.57, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Comedouro", "m": "2026-06", "brl": 33.57, "un": 3}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Lavável", "m": "2026-02", "brl": 121.57, "un": 11}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Lavável", "m": "2026-03", "brl": 158.85, "un": 11}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Lavável", "m": "2026-04", "brl": 239.92, "un": 12}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Lavável", "m": "2026-05", "brl": 267.91, "un": 17}, {"p": "Shopee", "c": "Ricapet", "pr": "Tapete Lavável", "m": "2026-06", "brl": 135.96, "un": 8}, {"p": "Shopee", "c": "Thapets", "pr": "Alimentador Automático", "m": "2026-04", "brl": 227.95, "un": 5}, {"p": "Shopee", "c": "Thapets", "pr": "Alimentador Automático", "m": "2026-05", "brl": 87.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Alimentador Automático", "m": "2026-06", "brl": 87.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo", "m": "2026-01", "brl": 1682.01, "un": 45}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo", "m": "2026-02", "brl": 636.59, "un": 20}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo", "m": "2026-03", "brl": 1120.44, "un": 33}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo", "m": "2026-04", "brl": 1813.89, "un": 46}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo", "m": "2026-05", "brl": 1009.28, "un": 29}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo", "m": "2026-06", "brl": 1106.5, "un": 31}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo Gato", "m": "2026-01", "brl": 178.33, "un": 8}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo Gato", "m": "2026-02", "brl": 215.9, "un": 16}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo Gato", "m": "2026-03", "brl": 87.96, "un": 6}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo Gato", "m": "2026-04", "brl": 71.98, "un": 6}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Adesivo Gato", "m": "2026-06", "brl": 95.96, "un": 8}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Carpete 1 Folha", "m": "2026-01", "brl": 2467.44, "un": 82}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Carpete 1 Folha", "m": "2026-02", "brl": 1079.78, "un": 29}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Carpete 1 Folha", "m": "2026-03", "brl": 613.46, "un": 21}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Carpete 1 Folha", "m": "2026-04", "brl": 554.65, "un": 19}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Carpete 1 Folha", "m": "2026-05", "brl": 419.89, "un": 15}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Carpete 1 Folha", "m": "2026-06", "brl": 593.26, "un": 16}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço", "m": "2026-01", "brl": 1343.76, "un": 21}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço", "m": "2026-02", "brl": 1531.72, "un": 28}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço", "m": "2026-03", "brl": 889.43, "un": 14}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço", "m": "2026-04", "brl": 1231.08, "un": 19}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço", "m": "2026-05", "brl": 1835.9, "un": 29}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço", "m": "2026-06", "brl": 945.76, "un": 17}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço Simples", "m": "2026-02", "brl": 107.99, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço Simples", "m": "2026-03", "brl": 200.78, "un": 4}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço Simples", "m": "2026-04", "brl": 95.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço Simples", "m": "2026-05", "brl": 95.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Braço Simples", "m": "2026-06", "brl": 119.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Madeira", "m": "2026-01", "brl": 1426.06, "un": 34}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Madeira", "m": "2026-02", "brl": 327.92, "un": 8}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Madeira", "m": "2026-03", "brl": 639.84, "un": 16}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Madeira", "m": "2026-04", "brl": 739.82, "un": 17}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Madeira", "m": "2026-05", "brl": 279.93, "un": 7}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador De Madeira", "m": "2026-06", "brl": 399.9, "un": 10}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Parede", "m": "2026-01", "brl": 8335.28, "un": 401}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Parede", "m": "2026-02", "brl": 4233.98, "un": 201}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Parede", "m": "2026-03", "brl": 1229.08, "un": 51}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Parede", "m": "2026-04", "brl": 895.64, "un": 35}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Parede", "m": "2026-05", "brl": 262.29, "un": 11}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Parede", "m": "2026-06", "brl": 195.12, "un": 8}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Rampa", "m": "2026-01", "brl": 733.27, "un": 31}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Rampa", "m": "2026-02", "brl": 449.41, "un": 19}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Rampa", "m": "2026-03", "brl": 351.85, "un": 15}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Rampa", "m": "2026-04", "brl": 262.29, "un": 11}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Rampa", "m": "2026-05", "brl": 111.95, "un": 5}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Rampa", "m": "2026-06", "brl": 75.17, "un": 3}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Túnel", "m": "2026-01", "brl": 43.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Túnel", "m": "2026-04", "brl": 87.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Túnel", "m": "2026-05", "brl": 39.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Arranhador Túnel", "m": "2026-06", "brl": 199.95, "un": 5}, {"p": "Shopee", "c": "Thapets", "pr": "Brinquedo Interativo", "m": "2026-03", "brl": 16.72, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Brinquedo Interativo", "m": "2026-05", "brl": 58.16, "un": 3}, {"p": "Shopee", "c": "Thapets", "pr": "Brinquedo Interativo", "m": "2026-06", "brl": 692.8, "un": 40}, {"p": "Shopee", "c": "Thapets", "pr": "Cama Suspensa", "m": "2026-01", "brl": 35.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Cama Suspensa", "m": "2026-02", "brl": 43.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Cama Suspensa", "m": "2026-03", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Thapets", "pr": "Cama Suspensa", "m": "2026-04", "brl": 179.95, "un": 5}, {"p": "Shopee", "c": "Thapets", "pr": "Caminha 02", "m": "2026-01", "brl": 43.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Caminha 02", "m": "2026-02", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Thapets", "pr": "Camisa Dryfit", "m": "2026-04", "brl": 47.99, "un": 5}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 03", "m": "2026-01", "brl": 159.96, "un": 4}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 03", "m": "2026-02", "brl": 79.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 03", "m": "2026-03", "brl": 79.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 03", "m": "2026-04", "brl": 79.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 03", "m": "2026-05", "brl": 119.97, "un": 3}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 03", "m": "2026-06", "brl": 39.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 07", "m": "2026-01", "brl": 299.95, "un": 5}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 07", "m": "2026-03", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 07", "m": "2026-04", "brl": 59.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 08", "m": "2026-01", "brl": 83.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 08", "m": "2026-03", "brl": 157.18, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 09", "m": "2026-02", "brl": 171.97, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 09", "m": "2026-03", "brl": 51.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 09", "m": "2026-04", "brl": 51.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 10", "m": "2026-01", "brl": 183.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Casinha 10", "m": "2026-03", "brl": 83.19, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Chuchups", "m": "2026-01", "brl": 23.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Degrau", "m": "2026-02", "brl": 75.99, "un": 5}, {"p": "Shopee", "c": "Thapets", "pr": "Degrau", "m": "2026-03", "brl": 119.98, "un": 6}, {"p": "Shopee", "c": "Thapets", "pr": "Nicho Playground", "m": "2026-01", "brl": 115.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Nicho Playground", "m": "2026-04", "brl": 116.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Pega Areia", "m": "2026-01", "brl": 6039.66, "un": 190}, {"p": "Shopee", "c": "Thapets", "pr": "Pega Areia", "m": "2026-02", "brl": 3283.62, "un": 109}, {"p": "Shopee", "c": "Thapets", "pr": "Pega Areia", "m": "2026-03", "brl": 1993.74, "un": 64}, {"p": "Shopee", "c": "Thapets", "pr": "Pega Areia", "m": "2026-04", "brl": 902.9, "un": 29}, {"p": "Shopee", "c": "Thapets", "pr": "Pega Areia", "m": "2026-05", "brl": 1612.82, "un": 50}, {"p": "Shopee", "c": "Thapets", "pr": "Pega Areia", "m": "2026-06", "brl": 279.88, "un": 12}, {"p": "Shopee", "c": "Thapets", "pr": "Piso Carpete", "m": "2026-01", "brl": 135.84, "un": 8}, {"p": "Shopee", "c": "Thapets", "pr": "Piso Carpete", "m": "2026-02", "brl": 135.84, "un": 8}, {"p": "Shopee", "c": "Thapets", "pr": "Piso Carpete", "m": "2026-05", "brl": 2027.67, "un": 156}, {"p": "Shopee", "c": "Thapets", "pr": "Piso Carpete", "m": "2026-06", "brl": 311.94, "un": 24}, {"p": "Shopee", "c": "Thapets", "pr": "Playground", "m": "2026-01", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Thapets", "pr": "Playground", "m": "2026-02", "brl": 75.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Playground", "m": "2026-04", "brl": 77.99, "un": 1}, {"p": "Shopee", "c": "Thapets", "pr": "Presilhas Aspirais", "m": "2026-01", "brl": 55.97, "un": 56}, {"p": "Shopee", "c": "Thapets", "pr": "Presilhas Aspirais", "m": "2026-02", "brl": 55.95, "un": 56}, {"p": "Shopee", "c": "Thapets", "pr": "Presilhas Aspirais", "m": "2026-03", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Thapets", "pr": "Presilhas Aspirais", "m": "2026-04", "brl": 27.99, "un": 32}, {"p": "Shopee", "c": "Thapets", "pr": "Presilhas Aspirais", "m": "2026-05", "brl": 0.0, "un": 0}, {"p": "Shopee", "c": "Thapets", "pr": "Presilhas Aspirais", "m": "2026-06", "brl": 23.99, "un": 24}, {"p": "Shopee", "c": "Thapets", "pr": "Rampa 6Mm", "m": "2026-02", "brl": 159.98, "un": 2}, {"p": "Shopee", "c": "Thapets", "pr": "Tapete Lavável", "m": "2026-01", "brl": 38.34, "un": 6}, {"p": "Shopee", "c": "Thapets", "pr": "Tapete Lavável", "m": "2026-02", "brl": 134.19, "un": 21}, {"p": "Shopee", "c": "Thapets", "pr": "Tapete Lavável", "m": "2026-03", "brl": 385.04, "un": 59}, {"p": "Shopee", "c": "Thapets", "pr": "Tapete Lavável", "m": "2026-04", "brl": 295.56, "un": 45}, {"p": "Shopee", "c": "Thapets", "pr": "Tapete Lavável", "m": "2026-05", "brl": 153.37, "un": 24}, {"p": "Shopee", "c": "Thapets", "pr": "Tapete Lavável", "m": "2026-06", "brl": 600.68, "un": 94}], "meses": ["2026-01", "2026-02", "2026-03", "2026-04", "2026-05", "2026-06"], "plats": ["Mercado Livre", "Shopee"], "contas": ["Ricapet", "Thapets"], "produtos": ["Alimentador Automático", "Arranhador Adesivo", "Arranhador Adesivo Gato", "Arranhador Cara De Gato", "Arranhador Carpete 1 Folha", "Arranhador De Braço", "Arranhador De Braço Simples", "Arranhador De Madeira", "Arranhador Parede", "Arranhador Rampa", "Arranhador Túnel", "Banheiro Inteligente", "Brinquedo Interativo", "Cama Suspensa", "Caminha 02", "Camisa Dryfit", "Casinha 03", "Casinha 04", "Casinha 05", "Casinha 06", "Casinha 07", "Casinha 08", "Casinha 09", "Casinha 10", "Casinha 12", "Casinha 14", "Casinha 15", "Casinha 16", "Casinha Toca", "Chuchups", "Comedouro Inteligente", "Degrau", "Gaiola Coelho Jel Plast", "Gaiola Hamster 3 Andares Jel Plast", "Gaiola Hamster Jel Plast", "Kit Higiene Sanitário Jel Plast", "Nicho Grande", "Nicho Playground", "Pato Interativo", "Pega Areia", "Piso Carpete", "Playground", "Playground 02", "Playground 03", "Playground 04", "Playground 05", "Playground 06", "Poste Arranhador", "Presilhas Aspirais", "Rampa 6Mm", "Sanitario E Pega Areia", "Sanitário", "Tapete Comedouro", "Tapete Lavável"], "totBRL": 2007458.47, "totUN": 81118};
+const MES_LABEL = {'2026-01':'jan','2026-02':'fev','2026-03':'mar','2026-04':'abr','2026-05':'mai','2026-06':'jun'};
+const COLORS = {'Mercado Livre':'#f4b400','Shopee':'#ee4d2d','Ricapet':'#0f766e','Thapets':'#7c4dcf'};
+const PROD_PALETTE = ['#0f766e','#ee4d2d','#f4b400','#7c4dcf','#2563eb','#db2777','#94a3b8'];
+const brBRL = n => n.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+const brBRLc = n => 'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const brNUM = n => n.toLocaleString('pt-BR');
+
+let DATA = null;
+let state = null;
+const fPlat=document.getElementById('fPlat'),fConta=document.getElementById('fConta'),fProd=document.getElementById('fProd');
+const fMonths=document.getElementById('fMonths');
+
+function opt(v,t){const o=document.createElement('option');o.value=v;o.textContent=t;return o;}
+
+// Funde os registros fixos (Shopee + histórico) com os registros ao vivo do ML.
+// Recalcula as listas de meses/plataformas/contas/produtos e os totais gerais.
+function montarDATA(recsVivosML){
+  const recs = DATA_FIXO.recs.concat(recsVivosML || []);
+  const meses = [...new Set(recs.map(r=>r.m))].sort();
+  const plats = [...new Set(recs.map(r=>r.p))];
+  const contas = [...new Set(recs.map(r=>r.c))];
+  const produtos = [...new Set(recs.map(r=>r.pr))].sort();
+  let totBRL=0, totUN=0;
+  recs.forEach(r=>{totBRL+=r.brl; totUN+=r.un;});
+  return {recs, meses, plats, contas, produtos, totBRL: Math.round(totBRL*100)/100, totUN};
+}
+
+function popularFiltros(){
+  fPlat.innerHTML=''; fConta.innerHTML=''; fProd.innerHTML=''; fMonths.innerHTML='';
+  fPlat.append(opt('__all','Todas')); DATA.plats.forEach(p=>fPlat.append(opt(p,p)));
+  fConta.append(opt('__all','Todas')); DATA.contas.forEach(c=>fConta.append(opt(c,c)));
+  fProd.append(opt('__all','Todos os produtos')); DATA.produtos.forEach(p=>fProd.append(opt(p,p)));
+  DATA.meses.forEach(m=>{const b=document.createElement('button');b.className='chip on';b.textContent=MES_LABEL[m]||m;b.dataset.m=m;
+    b.onclick=()=>{if(state.months.has(m)){if(state.months.size>1)state.months.delete(m);}else state.months.add(m);
+      b.classList.toggle('on',state.months.has(m));render();};fMonths.append(b);});
+}
+
+fPlat.onchange=e=>{state.plat=e.target.value;render();};
+fConta.onchange=e=>{state.conta=e.target.value;render();};
+fProd.onchange=e=>{state.prod=e.target.value;render();};
+document.getElementById('reset').onclick=()=>{state.plat='__all';state.conta='__all';state.prod='__all';
+  state.months=new Set(DATA.meses);fPlat.value='__all';fConta.value='__all';fProd.value='__all';
+  [...fMonths.children].forEach(c=>c.classList.add('on'));render();};
+document.querySelectorAll('#segBrl button').forEach(b=>b.onclick=()=>{state.bBrl=b.dataset.b;
+  document.querySelectorAll('#segBrl button').forEach(x=>x.classList.toggle('on',x===b));render();});
+document.querySelectorAll('#segUn button').forEach(b=>b.onclick=()=>{state.bUn=b.dataset.b;
+  document.querySelectorAll('#segUn button').forEach(x=>x.classList.toggle('on',x===b));render();});
+
+function filtered(){return DATA.recs.filter(r=>
+  (state.plat==='__all'||r.p===state.plat)&&
+  (state.conta==='__all'||r.c===state.conta)&&
+  (state.prod==='__all'||r.pr===state.prod)&&
+  state.months.has(r.m));}
+
+const dimKey={plataforma:'p',conta:'c',produto:'pr'};
+function buildDatasets(recs,metric,breakdown){
+  const months=DATA.meses.filter(m=>state.months.has(m));
+  const key=dimKey[breakdown];
+  let groups=[...new Set(recs.map(r=>r[key]))];
+  let topSet=null;
+  if(breakdown==='produto'){
+    const tot={};recs.forEach(r=>tot[r.pr]=(tot[r.pr]||0)+r[metric]);
+    const ordered=Object.keys(tot).sort((a,b)=>tot[b]-tot[a]);
+    topSet=ordered.slice(0,6);
+    groups=topSet.concat(ordered.length>6?['Outros']:[]);
+  } else {
+    const order=breakdown==='plataforma'?DATA.plats:DATA.contas;
+    groups=order.filter(g=>groups.includes(g));
+  }
+  const ds=groups.map((g,i)=>{
+    const color=breakdown==='produto'?PROD_PALETTE[i%PROD_PALETTE.length]:(COLORS[g]||PROD_PALETTE[i%PROD_PALETTE.length]);
+    const dataArr=months.map(m=>{
+      let sum=0;
+      recs.forEach(r=>{if(r.m!==m)return;
+        let gv=r[key];
+        if(breakdown==='produto'){gv=topSet.includes(r.pr)?r.pr:'Outros';}
+        if(gv===g)sum+=r[metric];});
+      return Math.round(sum*100)/100;
+    });
+    return {label:g,data:dataArr,backgroundColor:color,borderRadius:5,borderSkipped:false,
+      maxBarThickness:46,stack:'s'};
+  });
+  return {labels:months.map(m=>MES_LABEL[m]),datasets:ds};
+}
+
+let chBrl,chUn;
+const baseOpts=(fmt)=>({responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{position:'bottom',labels:{font:{family:'Inter',size:12},usePointStyle:true,pointStyle:'rectRounded',boxWidth:9,padding:14,color:'#46586a'}},
+    tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmt(c.parsed.y)},backgroundColor:'#122029',padding:10,cornerRadius:8,titleFont:{family:'Space Grotesk'},bodyFont:{family:'Inter'}}},
+  scales:{x:{stacked:true,grid:{display:false},ticks:{font:{family:'Space Grotesk',size:13},color:'#46586a'}},
+    y:{stacked:true,grid:{color:'#eef1f4'},border:{display:false},ticks:{font:{family:'Space Grotesk',size:11},color:'#94a3b8',callback:fmt}}}});
+
+function render(){
+  const recs=filtered();
+  // KPIs
+  let brl=0,un=0;const prods=new Set();
+  recs.forEach(r=>{brl+=r.brl;un+=r.un;if(r.un>0)prods.add(r.pr);});
+  const rpu=un>0?brl/un:0;
+  document.getElementById('kpis').innerHTML=`
+    <div class="kpi ac"><div class="lab">Faturamento</div><div class="val">R$ ${brBRL(brl)}</div><div class="sub">total (BRL) no recorte</div></div>
+    <div class="kpi"><div class="lab">Unidades vendidas</div><div class="val">${brNUM(un)}</div><div class="sub">total de unidades</div></div>
+    <div class="kpi"><div class="lab">Receita por unidade</div><div class="val">R$ ${rpu.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div><div class="sub">média no recorte</div></div>
+    <div class="kpi"><div class="lab">Produtos ativos</div><div class="val">${prods.size}</div><div class="sub">com venda no período</div></div>`;
+  // charts
+  const dBrl=buildDatasets(recs,'brl',state.bBrl);
+  const dUn=buildDatasets(recs,'un',state.bUn);
+  if(!chBrl){chBrl=new Chart(document.getElementById('chBrl'),{type:'bar',data:dBrl,options:baseOpts(v=>'R$ '+brBRL(v))});}
+  else{chBrl.data=dBrl;chBrl.update();}
+  if(!chUn){chUn=new Chart(document.getElementById('chUn'),{type:'bar',data:dUn,options:baseOpts(v=>brNUM(v))});}
+  else{chUn.data=dUn;chUn.update();}
+  // table
+  const agg={};recs.forEach(r=>{if(!agg[r.pr])agg[r.pr]={brl:0,un:0};agg[r.pr].brl+=r.brl;agg[r.pr].un+=r.un;});
+  const rows=Object.entries(agg).sort((a,b)=>b[1].brl-a[1].brl);
+  const max=rows.length?rows[0][1].brl:1;
+  document.getElementById('tbody').innerHTML=rows.map(([p,v],i)=>{
+    const pct=brl>0?v.brl/brl*100:0;
+    return `<tr><td><span class="rank">${i+1}</span>${p}</td>
+      <td class="num">${brBRLc(v.brl)}</td>
+      <td class="num">${brNUM(v.un)}</td>
+      <td class="num">R$ ${(v.un>0?v.brl/v.un:0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td class="num">${pct.toFixed(1)}%<span class="bar-mini" style="width:${Math.max(2,pct/(rows.length?(rows[0][1].brl/brl*100):1)*60)}px"></span></td></tr>`;
+  }).join('')||'<tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:24px">Nenhum dado para os filtros selecionados.</td></tr>';
+}
+async function buscarVendasMLAoVivo(){
+  const resp = await fetch('/api/ml-vendas');
+  if(!resp.ok) throw new Error('Falha ao buscar vendas do ML: '+resp.status);
+  const dados = await resp.json();
+  return dados.recs || [];
+}
+
+async function iniciar(){
+  let recsVivosML = [];
+  let avisoApi = '';
+  try{
+    recsVivosML = await buscarVendasMLAoVivo();
+  }catch(erro){
+    console.error('Não foi possível buscar dados ao vivo do Mercado Livre:', erro);
+    avisoApi = ' (dados do Mercado Livre podem estar desatualizados — falha ao conectar com a API)';
+  }
+
+  DATA = montarDATA(recsVivosML);
+  state = {plat:'__all',conta:'__all',prod:'__all',months:new Set(DATA.meses),bBrl:'plataforma',bUn:'plataforma'};
+
+  popularFiltros();
+  render();
+
+  document.getElementById('ftBRL').textContent=brBRL(DATA.totBRL);
+  document.getElementById('ftUN').textContent=brNUM(DATA.totUN);
+  if(avisoApi){
+    const foot=document.querySelector('.foot');
+    if(foot) foot.textContent += avisoApi;
+  }
+}
+
+iniciar();
+</script>
+</body>
+</html>
