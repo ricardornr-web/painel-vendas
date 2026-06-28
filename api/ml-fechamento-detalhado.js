@@ -52,29 +52,31 @@ function montarBaseFinal(pedidos, nomeConta) {
       const margemPercentual =
         margemBruta != null && receitaBruta > 0 ? (margemBruta / receitaBruta) * 100 : null;
 
+      // Nomes de campo abaixo espelham 1:1 as colunas da aba "Base Final" do
+      // modelo Excel — só as que são possíveis de obter via /orders/search,
+      // sem chamada extra por pedido (ver ALTERACAO_mlAuth / decisão registrada
+      // no chat: colunas de tarifa/frete/dados do comprador/status narrativo
+      // ficam de fora por exigirem o relatório manual ou custar 1 call/pedido).
       linhas.push({
-        // --- colunas vindas do cruzamento com a TABELA_AUXILIAR ---
-        empresa: nomeConta,
-        produto: dadosProduto?.produto ?? null,
-        cor: dadosProduto?.cor ?? null,
-        tamanho: dadosProduto?.tamanho ?? null,
-        unidade: dadosProduto?.unidade ?? null,
-        custoUnitario: dadosProduto?.custo ?? null,
-        custoTotal: custoTotal != null ? Math.round(custoTotal * 100) / 100 : null,
-        margemBruta: margemBruta != null ? Math.round(margemBruta * 100) / 100 : null,
-        margemPercentual:
-          margemPercentual != null ? Math.round(margemPercentual * 100) / 100 : null,
+        Empresa: nomeConta,
+        PRODUTO: dadosProduto?.produto ?? null,
+        COR: dadosProduto?.cor ?? null,
+        TAMANHO: dadosProduto?.tamanho ?? null,
+        UNIDADE: dadosProduto?.unidade ?? null,
+        Custo: dadosProduto?.custo ?? null,
+        'Custo total': custoTotal != null ? Math.round(custoTotal * 100) / 100 : null,
+        'Margem bruta': margemBruta != null ? Math.round(margemBruta * 100) / 100 : null,
+        'Margem %': margemPercentual != null ? Math.round(margemPercentual * 100) / 100 : null,
 
-        // --- colunas vindas diretamente do relatório/API do ML ---
-        numeroVenda: order.id,
-        dataVenda: order.date_created,
-        estado: order.status,
-        skuItem: sku ?? null,
-        codigoAnuncio: codigoAnuncio ?? null,
-        tituloAnuncio: titulo ?? null,
-        unidadesVendidas: quantidade,
-        precoUnitarioVenda: precoUnitario,
-        receitaPorProdutos: Math.round(receitaBruta * 100) / 100,
+        'N.º de venda': order.id,
+        'Data da venda': order.date_created,
+        Unidades: quantidade,
+        'Receita por produtos (BRL)': Math.round(receitaBruta * 100) / 100,
+        SKU: sku ?? null,
+        '# de anúncio': codigoAnuncio ?? null,
+        'Canal de venda': 'Mercado Livre',
+        'Título do anúncio': titulo ?? null,
+        'Preço unitário de venda do anúncio (BRL)': precoUnitario,
       });
     }
   }
@@ -107,7 +109,7 @@ module.exports = async function handler(req, res) {
     );
 
     const linhas = resultadosPorConta.flat();
-    const totalNaoMapeados = linhas.filter((l) => l.produto === null).length;
+    const totalNaoMapeados = linhas.filter((l) => l.PRODUTO === null).length;
 
     return res.status(200).json({
       linhas,
