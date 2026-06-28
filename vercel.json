@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/refresh-tokens",
-      "schedule": "0 * * * *"
+      "schedule": "0 6 * * *"
     }
   ]
 }
