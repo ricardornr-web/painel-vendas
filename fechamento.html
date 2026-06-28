@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fechamento — Painel de Vendas</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #161922;
+    --panel-2: #1c2029;
+    --border: #2a2f3a;
+    --text: #e7e9ee;
+    --text-dim: #9aa1ae;
+    --accent: #4f8df5;
+    --green: #3ecf8e;
+    --red: #f0566e;
+    --amber: #e8b339;
+    --mono: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 14px;
+  }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  .subtitle { color: var(--text-dim); font-size: 13px; margin-top: 2px; }
+
+  .toolbar {
+    display: flex; align-items: end; gap: 12px; flex-wrap: wrap;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; margin-bottom: 20px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  input[type="date"], select {
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 6px; padding: 8px 10px; font-size: 13px; font-family: inherit;
+  }
+  button {
+    border: none; border-radius: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600;
+    cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-export { background: var(--green); color: #08231a; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .stat .label { color: var(--text-dim); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 6px; }
+  .stat .value { font-size: 22px; font-weight: 600; font-family: var(--mono); }
+  .stat .value.green { color: var(--green); }
+  .stat .value.amber { color: var(--amber); }
+
+  .alert {
+    background: rgba(232,179,57,0.1); border: 1px solid rgba(232,179,57,0.3); color: var(--amber);
+    border-radius: 8px; padding: 10px 14px; font-size: 13px; margin-bottom: 16px; display: none;
+  }
+  .alert.show { display: block; }
+
+  .table-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: auto; max-height: 65vh; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead th {
+    position: sticky; top: 0; background: var(--panel-2); text-align: left; padding: 10px 12px;
+    font-weight: 600; color: var(--text-dim); border-bottom: 1px solid var(--border);
+    white-space: nowrap; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; font-family: var(--mono); }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .num { text-align: right; }
+  .green-text { color: var(--green); }
+  .red-text { color: var(--red); }
+  .dim { color: var(--text-dim); }
+  .empty-state, .loading-state {
+    padding: 60px 20px; text-align: center; color: var(--text-dim);
+  }
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; margin-right: 8px; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Fechamento — Base Final</h1>
+      <div class="subtitle">Vendas do Mercado Livre cruzadas com a Tabela Auxiliar (PRODUTO, COR, TAMANHO, CUSTO)</div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="field">
+      <label for="dataInicio">Início do período</label>
+      <input type="date" id="dataInicio">
+    </div>
+    <div class="field">
+      <label for="dataFim">Fim do período</label>
+      <input type="date" id="dataFim">
+    </div>
+    <button class="btn-primary" id="btnGerar">Gerar Fechamento</button>
+    <button class="btn-export" id="btnExportar" disabled>Exportar para Excel</button>
+    <button class="btn-ghost" id="btnLimpar">Limpar</button>
+  </div>
+
+  <div class="alert" id="alertNaoMapeados"></div>
+
+  <div class="stats" id="stats" style="display:none;">
+    <div class="stat">
+      <div class="label">Linhas (vendas)</div>
+      <div class="value" id="statLinhas">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Receita bruta total</div>
+      <div class="value" id="statReceita">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Margem bruta total</div>
+      <div class="value green" id="statMargem">—</div>
+    </div>
+    <div class="stat">
+      <div class="label">Não mapeados</div>
+      <div class="value amber" id="statNaoMapeados">—</div>
+    </div>
+  </div>
+
+  <div class="table-wrap" id="tableWrap">
+    <div class="empty-state">Selecione um período e clique em "Gerar Fechamento".</div>
+  </div>
+</div>
+
+<script>
+const ENDPOINT = '/api/ml-fechamento-detalhado';
+let dadosAtuais = [];
+
+const fmtBRL = (v) => v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtPct = (v) => v == null ? '—' : v.toFixed(1).replace('.', ',') + '%';
+const fmtData = (iso) => iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+function isoComHora(dataStr, fim) {
+  return fim ? `${dataStr}T23:59:59.000-00:00` : `${dataStr}T00:00:00.000-00:00`;
+}
+
+async function gerarFechamento() {
+  const dataInicio = document.getElementById('dataInicio').value;
+  const dataFim = document.getElementById('dataFim').value;
+  const tableWrap = document.getElementById('tableWrap');
+  const btnGerar = document.getElementById('btnGerar');
+  const btnExportar = document.getElementById('btnExportar');
+  const alertBox = document.getElementById('alertNaoMapeados');
+
+  if (!dataInicio || !dataFim) {
+    alert('Selecione as duas datas do período.');
+    return;
+  }
+
+  btnGerar.disabled = true;
+  btnExportar.disabled = true;
+  alertBox.classList.remove('show');
+  document.getElementById('stats').style.display = 'none';
+  tableWrap.innerHTML = '<div class="loading-state"><span class="spinner"></span>Buscando vendas e cruzando com a Tabela Auxiliar…</div>';
+
+  try {
+    const url = `${ENDPOINT}?dataInicio=${encodeURIComponent(isoComHora(dataInicio, false))}&dataFim=${encodeURIComponent(isoComHora(dataFim, true))}`;
+    const resp = await fetch(url);
+    const json = await resp.json();
+
+    if (!resp.ok) throw new Error(json.erro || 'Erro desconhecido ao gerar fechamento.');
+
+    dadosAtuais = json.linhas || [];
+    renderizarTabela(dadosAtuais);
+    renderizarStats(json);
+
+    if (json.totalNaoMapeados > 0) {
+      alertBox.textContent = `⚠ ${json.totalNaoMapeados} venda(s) não encontraram correspondência na Tabela Auxiliar (SKU/Título não cadastrados). Essas linhas aparecem sem Produto/Custo/Margem.`;
+      alertBox.classList.add('show');
+    }
+
+    btnExportar.disabled = dadosAtuais.length === 0;
+  } catch (err) {
+    tableWrap.innerHTML = `<div class="empty-state" style="color: var(--red)">Erro: ${err.message}</div>`;
+  } finally {
+    btnGerar.disabled = false;
+  }
+}
+
+function renderizarStats(json) {
+  const receitaTotal = dadosAtuais.reduce((s, l) => s + (l.receitaPorProdutos || 0), 0);
+  const margemTotal = dadosAtuais.reduce((s, l) => s + (l.margemBruta || 0), 0);
+
+  document.getElementById('statLinhas').textContent = json.totalLinhas ?? dadosAtuais.length;
+  document.getElementById('statReceita').textContent = fmtBRL(receitaTotal);
+  document.getElementById('statMargem').textContent = fmtBRL(margemTotal);
+  document.getElementById('statNaoMapeados').textContent = json.totalNaoMapeados ?? 0;
+  document.getElementById('stats').style.display = 'grid';
+}
+
+function renderizarTabela(linhas) {
+  const tableWrap = document.getElementById('tableWrap');
+
+  if (linhas.length === 0) {
+    tableWrap.innerHTML = '<div class="empty-state">Nenhuma venda encontrada nesse período.</div>';
+    return;
+  }
+
+  const colunas = [
+    { key: 'empresa', label: 'Empresa' },
+    { key: 'produto', label: 'Produto' },
+    { key: 'cor', label: 'Cor' },
+    { key: 'tamanho', label: 'Tamanho' },
+    { key: 'dataVenda', label: 'Data da venda', fmt: fmtData },
+    { key: 'numeroVenda', label: 'Nº de venda' },
+    { key: 'estado', label: 'Estado' },
+    { key: 'skuItem', label: 'SKU' },
+    { key: 'codigoAnuncio', label: '# Anúncio' },
+    { key: 'unidadesVendidas', label: 'Unid.', num: true },
+    { key: 'precoUnitarioVenda', label: 'Preço unit.', num: true, fmt: fmtBRL },
+    { key: 'receitaPorProdutos', label: 'Receita (BRL)', num: true, fmt: fmtBRL },
+    { key: 'custoTotal', label: 'Custo total', num: true, fmt: fmtBRL },
+    { key: 'margemBruta', label: 'Margem bruta', num: true, fmt: fmtBRL, colorize: true },
+    { key: 'margemPercentual', label: 'Margem %', num: true, fmt: fmtPct },
+  ];
+
+  let html = '<table><thead><tr>';
+  colunas.forEach((c) => html += `<th${c.num ? ' class="num"' : ''}>${c.label}</th>`);
+  html += '</tr></thead><tbody>';
+
+  linhas.forEach((linha) => {
+    html += '<tr>';
+    colunas.forEach((c) => {
+      let v = linha[c.key];
+      const display = v == null ? '<span class="dim">—</span>' : (c.fmt ? c.fmt(v) : v);
+      let cls = c.num ? 'num' : '';
+      if (c.colorize && v != null) cls += v >= 0 ? ' green-text' : ' red-text';
+      html += `<td class="${cls}">${display}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  tableWrap.innerHTML = html;
+}
+
+function exportarExcel() {
+  if (dadosAtuais.length === 0) return;
+
+  const linhasExport = dadosAtuais.map((l) => ({
+    'Empresa': l.empresa,
+    'PRODUTO': l.produto,
+    'COR': l.cor,
+    'TAMANHO': l.tamanho,
+    'UNIDADE': l.unidade,
+    'Custo unitário': l.custoUnitario,
+    'Custo total': l.custoTotal,
+    'Margem bruta': l.margemBruta,
+    'Margem %': l.margemPercentual,
+    'N.º de venda': l.numeroVenda,
+    'Data da venda': l.dataVenda ? new Date(l.dataVenda).toLocaleString('pt-BR') : '',
+    'Estado': l.estado,
+    'SKU': l.skuItem,
+    '# de anúncio': l.codigoAnuncio,
+    'Título do anúncio': l.tituloAnuncio,
+    'Unidades': l.unidadesVendidas,
+    'Preço unitário de venda do anúncio (BRL)': l.precoUnitarioVenda,
+    'Receita por produtos (BRL)': l.receitaPorProdutos,
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(linhasExport);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Base Final');
+
+  const dataInicio = document.getElementById('dataInicio').value;
+  const dataFim = document.getElementById('dataFim').value;
+  const nomeArquivo = `Fechamento_${dataInicio}_a_${dataFim}.xlsx`;
+
+  // writeFile já dispara o download nativo do navegador (que abre "Salvar como"
+  // dependendo da configuração do usuário em Chrome/Edge: Configurações > Downloads
+  // > "Perguntar onde salvar cada arquivo antes de fazer download").
+  XLSX.writeFile(wb, nomeArquivo);
+}
+
+document.getElementById('btnGerar').addEventListener('click', gerarFechamento);
+document.getElementById('btnExportar').addEventListener('click', exportarExcel);
+document.getElementById('btnLimpar').addEventListener('click', () => {
+  document.getElementById('dataInicio').value = '';
+  document.getElementById('dataFim').value = '';
+  dadosAtuais = [];
+  document.getElementById('stats').style.display = 'none';
+  document.getElementById('alertNaoMapeados').classList.remove('show');
+  document.getElementById('btnExportar').disabled = true;
+  document.getElementById('tableWrap').innerHTML = '<div class="empty-state">Selecione um período e clique em "Gerar Fechamento".</div>';
+});
+
+// Atalho: já preenche com o mês corrente
+(function preencherMesAtual() {
+  const hoje = new Date();
+  const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+  document.getElementById('dataInicio').value = primeiroDia.toISOString().slice(0, 10);
+  document.getElementById('dataFim').value = hoje.toISOString().slice(0, 10);
+})();
+</script>
+</body>
+</html>
