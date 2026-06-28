@@ -195,8 +195,8 @@ async function gerarFechamento() {
 }
 
 function renderizarStats(json) {
-  const receitaTotal = dadosAtuais.reduce((s, l) => s + (l.receitaPorProdutos || 0), 0);
-  const margemTotal = dadosAtuais.reduce((s, l) => s + (l.margemBruta || 0), 0);
+  const receitaTotal = dadosAtuais.reduce((s, l) => s + (l['Receita por produtos (BRL)'] || 0), 0);
+  const margemTotal = dadosAtuais.reduce((s, l) => s + (l['Margem bruta'] || 0), 0);
 
   document.getElementById('statLinhas').textContent = json.totalLinhas ?? dadosAtuais.length;
   document.getElementById('statReceita').textContent = fmtBRL(receitaTotal);
@@ -214,21 +214,20 @@ function renderizarTabela(linhas) {
   }
 
   const colunas = [
-    { key: 'empresa', label: 'Empresa' },
-    { key: 'produto', label: 'Produto' },
-    { key: 'cor', label: 'Cor' },
-    { key: 'tamanho', label: 'Tamanho' },
-    { key: 'dataVenda', label: 'Data da venda', fmt: fmtData },
-    { key: 'numeroVenda', label: 'Nº de venda' },
-    { key: 'estado', label: 'Estado' },
-    { key: 'skuItem', label: 'SKU' },
-    { key: 'codigoAnuncio', label: '# Anúncio' },
-    { key: 'unidadesVendidas', label: 'Unid.', num: true },
-    { key: 'precoUnitarioVenda', label: 'Preço unit.', num: true, fmt: fmtBRL },
-    { key: 'receitaPorProdutos', label: 'Receita (BRL)', num: true, fmt: fmtBRL },
-    { key: 'custoTotal', label: 'Custo total', num: true, fmt: fmtBRL },
-    { key: 'margemBruta', label: 'Margem bruta', num: true, fmt: fmtBRL, colorize: true },
-    { key: 'margemPercentual', label: 'Margem %', num: true, fmt: fmtPct },
+    { key: 'Empresa', label: 'Empresa' },
+    { key: 'PRODUTO', label: 'PRODUTO' },
+    { key: 'COR', label: 'COR' },
+    { key: 'TAMANHO', label: 'TAMANHO' },
+    { key: 'Data da venda', label: 'Data da venda', fmt: fmtData },
+    { key: 'N.º de venda', label: 'N.º de venda' },
+    { key: 'SKU', label: 'SKU' },
+    { key: '# de anúncio', label: '# de anúncio' },
+    { key: 'Unidades', label: 'Unidades', num: true },
+    { key: 'Preço unitário de venda do anúncio (BRL)', label: 'Preço unit. (BRL)', num: true, fmt: fmtBRL },
+    { key: 'Receita por produtos (BRL)', label: 'Receita (BRL)', num: true, fmt: fmtBRL },
+    { key: 'Custo total', label: 'Custo total', num: true, fmt: fmtBRL },
+    { key: 'Margem bruta', label: 'Margem bruta', num: true, fmt: fmtBRL, colorize: true },
+    { key: 'Margem %', label: 'Margem %', num: true, fmt: fmtPct },
   ];
 
   let html = '<table><thead><tr>';
@@ -254,25 +253,12 @@ function renderizarTabela(linhas) {
 function exportarExcel() {
   if (dadosAtuais.length === 0) return;
 
+  // Os dados já chegam do endpoint com os nomes de coluna exatamente como na
+  // aba "Base Final" do modelo — não é necessário remapear nada aqui.
+  // 'Data da venda' vira string legível em pt-BR só no momento da exportação.
   const linhasExport = dadosAtuais.map((l) => ({
-    'Empresa': l.empresa,
-    'PRODUTO': l.produto,
-    'COR': l.cor,
-    'TAMANHO': l.tamanho,
-    'UNIDADE': l.unidade,
-    'Custo unitário': l.custoUnitario,
-    'Custo total': l.custoTotal,
-    'Margem bruta': l.margemBruta,
-    'Margem %': l.margemPercentual,
-    'N.º de venda': l.numeroVenda,
-    'Data da venda': l.dataVenda ? new Date(l.dataVenda).toLocaleString('pt-BR') : '',
-    'Estado': l.estado,
-    'SKU': l.skuItem,
-    '# de anúncio': l.codigoAnuncio,
-    'Título do anúncio': l.tituloAnuncio,
-    'Unidades': l.unidadesVendidas,
-    'Preço unitário de venda do anúncio (BRL)': l.precoUnitarioVenda,
-    'Receita por produtos (BRL)': l.receitaPorProdutos,
+    ...l,
+    'Data da venda': l['Data da venda'] ? new Date(l['Data da venda']).toLocaleString('pt-BR') : '',
   }));
 
   const ws = XLSX.utils.json_to_sheet(linhasExport);
