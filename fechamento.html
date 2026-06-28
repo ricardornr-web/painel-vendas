@@ -168,7 +168,7 @@ async function gerarFechamento() {
   btnExportar.disabled = true;
   alertBox.classList.remove('show');
   document.getElementById('stats').style.display = 'none';
-  tableWrap.innerHTML = '<div class="loading-state"><span class="spinner"></span>Buscando vendas e cruzando com a Tabela Auxiliar…</div>';
+  tableWrap.innerHTML = '<div class="loading-state"><span class="spinner"></span>Buscando vendas, status de envio e cruzando com a Tabela Auxiliar… isso pode levar até 1-2 minutos em períodos maiores.</div>';
 
   try {
     const url = `${ENDPOINT}?dataInicio=${encodeURIComponent(isoComHora(dataInicio, false))}&dataFim=${encodeURIComponent(isoComHora(dataFim, true))}`;
@@ -183,6 +183,14 @@ async function gerarFechamento() {
 
     if (json.totalNaoMapeados > 0) {
       alertBox.textContent = `⚠ ${json.totalNaoMapeados} venda(s) não encontraram correspondência na Tabela Auxiliar (SKU/Título não cadastrados). Essas linhas aparecem sem Produto/Custo/Margem.`;
+      alertBox.classList.add('show');
+    }
+
+    if (json.avisoEstadoEnvio) {
+      const textoAtual = alertBox.textContent;
+      alertBox.textContent = textoAtual
+        ? `${textoAtual}  •  ⚠ ${json.avisoEstadoEnvio}`
+        : `⚠ ${json.avisoEstadoEnvio}`;
       alertBox.classList.add('show');
     }
 
@@ -219,6 +227,7 @@ function renderizarTabela(linhas) {
     { key: 'COR', label: 'COR' },
     { key: 'TAMANHO', label: 'TAMANHO' },
     { key: 'Data da venda', label: 'Data da venda', fmt: fmtData },
+    { key: 'Estado', label: 'Estado' },
     { key: 'N.º de venda', label: 'N.º de venda' },
     { key: 'SKU', label: 'SKU' },
     { key: '# de anúncio', label: '# de anúncio' },
